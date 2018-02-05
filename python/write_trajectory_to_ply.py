@@ -8,7 +8,8 @@ def write_ply_to_file(path, position, orientation, acceleration=None,
                       trajectory_color=None, num_axis=3,
                       length=1.0, kpoints=100, interval=100):
     """
-    Visualize camera trajectory as ply file
+    Visualize camera trajectory as ply file.
+    
     :param path: path to save
     :param position: Nx3 array of positions
     :param orientation: Nx4 array or orientation as quaternion
@@ -64,6 +65,7 @@ def write_ply_to_file(path, position, orientation, acceleration=None,
 def read_trajectory_from_ply_file(path):
     """
     Read ply files into numpy array.
+    
     :param path: File path of the ply file.
     :return: Nx3 array containing point positions.
     """

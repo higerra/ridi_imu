@@ -1,15 +1,10 @@
-import os
-import sys
-import math
-import argparse
 import numpy as np
 import quaternion
-import pandas
 from scipy.fftpack import fft
 from scipy.ndimage.filters import gaussian_filter1d
-import matplotlib.pyplot as plt
 
 import geometry
+
 
 class TrainingDataOption:
     def __init__(self, sample_step=10, window_size=200, feature='direct_gravity', target='local_speed_gravity'):
@@ -26,7 +21,8 @@ class TrainingDataOption:
 
 def compute_fourier_features(data, samples, window_size, threshold, discard_direct=False):
     """
-    Compute fourier coefficients as feature vector
+    Compute fourier coefficients as feature vector. Not used.
+    
     :param data: NxM array for N samples with M dimensions
     :return: Nxk array
     """
@@ -40,6 +36,17 @@ def compute_fourier_features(data, samples, window_size, threshold, discard_dire
 
 
 def compute_direct_features(data, samples_points, window_size, sigma=-1):
+    """
+    Construct feature vectors by concatenating source channels.
+    
+    :param data: NxM array. Each row contains all information of a frame.
+    :param samples_points: Indices of frames where feature vectors are constructed.
+    :param window_size: When constructing the feature vector at frame i, information between (i-window_size, i]
+                        is used.
+    :param sigma: When set to positive value, the data matrix will be filtered along the first dimension before
+                  concatenation.
+    :return: A matrix containing feature vectors.
+    """
     features = np.empty([samples_points.shape[0], data.shape[1] * window_size], dtype=np.float)
     for i in range(samples_points.shape[0]):
         data_slice = data[samples_points[i] - window_size:samples_points[i]]
@@ -50,7 +57,18 @@ def compute_direct_features(data, samples_points, window_size, sigma=-1):
 
 
 def compute_direct_feature_gravity(gyro, linacce, gravity, samples, window_size, sigma=-1):
-    gyro_gravity = gyro
+    """
+    Construct feature vectors by concatenating angular rates and linear accelerations in stabilized IMU frame.
+    
+    :param gyro: Nx3 array. Angular rates.
+    :param linacce: Nx3 array. Linear accelerations.
+    :param gravity: Nx3 array. Gravity vectors in local device frame.
+    :param samples: Indices where feature vectors are constructed.
+    :param window_size: Number of frames used when constructing feature vectors.
+    :param sigma: Sigma used for pre-filtering the signal before concatenating.
+    :return: A matrix containing feature vectors.
+    """
+    gyro_gravity = geometry.align_3dvector_with_gravity((gyro, gravity))
     linacce_gravity = geometry.align_3dvector_with_gravity(linacce, gravity)
     return compute_direct_features(np.concatenate([gyro_gravity, linacce_gravity], axis=1), samples_points=samples,
                                    window_size=window_size, sigma=sigma)
@@ -58,22 +76,25 @@ def compute_direct_feature_gravity(gyro, linacce, gravity, samples, window_size,
 
 def compute_speed(time_stamp, position, sample_points=None):
     """
-    Compute speed vector giving position and time_stamp
-    :param time_stamp:
-    :param position:
-    :param sample_points:
-    :return:
+    Compute speed vectors in the global frame giving position and time_stamp.
+    
+    :param time_stamp: N array. Time stamps of each frame.
+    :param position: Nx3 array. Positions of each frame.
+    :param sample_points: M array. Indices where feature vectors are constructed.
+    :return: Mx3 array, each contraining a speed vector at sampled frames.
     """
     if sample_points is None:
         sample_points = np.arange(0, time_stamp.shape[0], dtype=int)
     sample_points[-1] = min(sample_points[-1], time_stamp.shape[0] - 2)
-    speed = (position[sample_points+1] - position[sample_points]) / (time_stamp[sample_points+1] - time_stamp[sample_points])[:, None]
+    speed = (position[sample_points+1] - position[sample_points]) / (time_stamp[sample_points+1] -
+                                                                     time_stamp[sample_points])[:, None]
     return speed
 
 
 def compute_local_speed(time_stamp, position, orientation, sample_points=None):
     """
     Compute the speed in local (IMU) frame.
+    
     :param time_stamp: Nx1 array containing time stamps for each frame.
     :param position: Nx3 array of positions
     :param orientation: Nx4 array of orientations as quaternion
@@ -118,6 +139,7 @@ def compute_delta_angle(time_stamp, position, orientation, sample_points=None,
                         local_axis=quaternion.quaternion(1.0, 0., 0., -1.)):
     """
     Compute the cosine between the moving direction and viewing direction. Not used.
+    
     :param time_stamp: Time stamp
     :param position: Position. When passing Nx2 array, compute ignore z direction
     :param orientation: Orientation as quaternion
@@ -146,6 +168,7 @@ def compute_delta_angle(time_stamp, position, orientation, sample_points=None,
 def get_training_data(data_all, imu_columns, option, sample_points=None, extra_args=None):
     """
     Create training data.
+    
     :param data_all: The whole dataset. Must include 'time' column and all columns inside imu_columns
     :param imu_columns: Columns used for constructing feature vectors. Fields must exist in the dataset
     :param option: An instance of TrainingDataOption

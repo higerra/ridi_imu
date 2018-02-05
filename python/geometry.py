@@ -5,6 +5,13 @@ import quaternion
 
 
 def rotate_vector(input, orientation):
+    """
+    Rotate 3D vectors with quaternions.
+    
+    :param input: Nx3 array containing N 3D vectors.
+    :param orientation: Nx4 array containing N quaternions.
+    :return: Nx3 array containing rotated vectors.
+    """
     output = np.empty(input.shape, dtype=float)
     for i in range(input.shape[0]):
         q = quaternion.quaternion(*orientation[i])
@@ -14,8 +21,10 @@ def rotate_vector(input, orientation):
 
 def rotation_matrix_from_two_vectors(v1, v2):
     """
-    Using Rodrigues rotation formula
+    Compute 3x3 rotation matrix between two vectors using Rodrigues rotation formula. Two vectors need not be
+    normalized.
     https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula
+    
     :param v1: starting vector
     :param v2: ending vector
     :return 3x3 rotation matrix
@@ -35,10 +44,11 @@ def rotation_matrix_from_two_vectors(v1, v2):
 
 def quaternion_from_two_vectors(v1, v2):
     """
-    Compute quaternion from two vectors
-    :param v1:
-    :param v2:
-    :return Quaternion representation of rotation between v1 and v2
+    Compute quaternion from two vectors. v1 and v2 need not be normalized.
+    
+    :param v1: starting vector
+    :param v2: ending vector
+    :return Quaternion representation of rotation that rotate v1 to v2.
     """
     v1n = v1 / np.linalg.norm(v1)
     v2n = v2 / np.linalg.norm(v2)
@@ -50,7 +60,8 @@ def quaternion_from_two_vectors(v1, v2):
 
 def align_3dvector_with_gravity(data, gravity, local_g_direction=np.array([0, 1, 0])):
     """
-    Adjust pose such that the gravity is at $target$ direction
+    Eliminate pitch and roll from a 3D vector by aligning gravity vector to local_g_direction.
+    
     @:param data: N x 3 array
     @:param gravity: real gravity direction
     @:param local_g_direction: z direction before alignment
@@ -60,56 +71,19 @@ def align_3dvector_with_gravity(data, gravity, local_g_direction=np.array([0, 1,
     assert data.shape[1] == 3, 'Expect Nx3 array input'
     assert data.shape[0] == gravity.shape[0], '{}, {}'.format(data.shape[0], gravity.shape[0])
 
-    # output = np.empty(data.shape, dtype=float)
+    epsilon = 1e-03
+    gravity_normalized = gravity / np.linalg.norm(gravity, axis=1)[:, None]
     output = np.copy(data)
     for i in range(data.shape[0]):
+        # Be careful about two singular conditions where gravity[i] and local_g_direction are parallel.
+        gd = np.dot(gravity_normalized[i], local_g_direction)
+        if gd > 1. - epsilon:
+            continue
+        if gd < -1. + epsilon:
+            output[i, 1] *= -1
+            continue
         q = quaternion_from_two_vectors(gravity[i], local_g_direction)
-        # TODO(yanhang): Is setting a a slack (0.99) reasonable here?
-        if q.w < 0.99:
-            output[i] = (q * quaternion.quaternion(1.0, *data[i]) * q.conj()).vec
-    return output
-
-
-def adjust_eular_angle(source):
-    # convert the euler angle s.t. pitch is in (-pi/2, pi/2), roll and yaw are in (-pi, pi)
-    output = np.copy(source)
-    if output[0] < -math.pi / 2:
-        output[0] += math.pi
-        output[1] *= -1
-        output[2] += math.pi
-    elif output[0] > math.pi / 2:
-        output[0] -= math.pi
-        output[1] *= -1
-        output[2] -= math.pi
-
-    for j in [1, 2]:
-        if output[j] < -math.pi:
-            output[j] += 2 * math.pi
-        if output[j] > math.pi:
-            output[j] -= 2 * math.pi
-    return output
-
-
-def align_eular_rotation_with_gravity(data, gravity, local_g_direction=np.array([0, 1, 0])):
-    """
-    Transform the coordinate frame of orientations such that the gravity is aligned with $local_g_direction
-    :param data: input orientation in Eular
-    :param gravity:
-    :param local_g_direction:
-    :return:
-    """
-    assert data.shape[1] == 3, 'Expect Nx3 array'
-    assert data.shape[0] == gravity.shape[0], '{}, {}'.format(data.shape[0], gravity.shape[0])
-
-    # output = np.empty(data.shape, dtype=float)
-    output = np.copy(data)
-
-    # be careful of the ambiguity of eular angle representation
-    for i in range(data.shape[0]):
-        rotor = quaternion_from_two_vectors(gravity[i], local_g_direction)
-        if np.linalg.norm(rotor.vec) > 1e-3 and rotor.w < 0.999:
-            q = rotor * quaternion.from_euler_angles(*data[i]) * rotor.conj()
-            output[i] = adjust_eular_angle(quaternion.as_euler_angles(q))
+        output[i] = (q * quaternion.quaternion(1.0, *data[i]) * q.conj()).vec
     return output
 
 
