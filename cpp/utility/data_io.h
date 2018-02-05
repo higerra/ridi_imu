@@ -55,10 +55,9 @@ struct DataLayout {
 
 class IMUDataset {
  public:
-  /// Constructor for IMUDataset. "load_control" specifies what domains to load.
+  // Constructor for IMUDataset. "load_control" specifies what domains to load by bit-wise boolean.
   explicit IMUDataset(const std::string &directory, unsigned char load_control = 255);
 
-  // getters
   inline const std::vector<Eigen::Vector3d> &GetGyro() const {
     return gyrocope_;
   }
@@ -125,6 +124,7 @@ class IMUDataset {
     return timestamp_;
   }
 
+  // The binary codes for each domain. For example, if load_control & IMU_GYRO == 1, the gyro data will be loaded.
   static constexpr unsigned char IMU_GYRO = 1;
   static constexpr unsigned char IMU_ACCELEROMETER = 2;
   static constexpr unsigned char IMU_LINEAR_ACCELERATION = 4;
@@ -155,12 +155,14 @@ class IMUDataset {
 };
 
 // Write a trajecotry to PLY file. If "only_xy" is set to true, the z axis of the trajectory is set to 0.
-// "axis_length"
+// In addition to trajectory, local axes can be drawn. Namely, axes with length "axis_length" represented
+// by "kpoints" points will be drawn every "interval" frames on the trajectory.
 void WriteToPly(const std::string &path, const double *ts, const Eigen::Vector3d *position,
                 const Eigen::Quaterniond *orientation, const int N, const bool only_xy = false,
                 const Eigen::Vector3d traj_color = Eigen::Vector3d(0, 255, 255),
                 const double axis_length = 0.5, const int kpoints = 100, const int interval = 200);
 
+// Parse comma separated line into a vector of double numbers.
 std::vector<double> ParseCommaSeparatedLine(const std::string &input);
 
 } //namespace ridi
