@@ -21,10 +21,10 @@ DEFINE_string(data_path, "", "Path to the csv file containing the data");
 DEFINE_string(output_path, "", "Path to the output file. If empty, the output file will be named regressed.txt"
     " and saved to the data folder");
 
-using IMUProject::ModelWrapper;
-using IMUProject::SVRCascade;
-using IMUProject::TrainingDataOption;
-using IMUProject::IMUDataset;
+using ridi::ModelWrapper;
+using ridi::SVRCascade;
+using ridi::TrainingDataOption;
+using ridi::IMUDataset;
 using cv::Mat;
 
 int main(int argc, char** argv){
@@ -42,7 +42,7 @@ int main(int argc, char** argv){
   printf("Number of records: %d\n", (int)ts.size());
   Mat feature;
   printf("Compute features...\n");
-  IMUProject::CreateFeatureMat(td_option, data, &feature);
+  ridi::CreateFeatureMat(td_option, data, &feature);
   printf("Num samples: %d\n", feature.rows);
   std::unique_ptr<ModelWrapper> model(new SVRCascade());
   CHECK(model->LoadFromFile(FLAGS_model_path)) << "Load model failed: " << FLAGS_model_path;

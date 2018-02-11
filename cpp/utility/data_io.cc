@@ -33,6 +33,7 @@ IMUDataset::IMUDataset(const std::string &directory, unsigned char load_control)
     fin >> pos[0] >> pos[1] >> pos[2];
     fin >> ori.w() >> ori.x() >> ori.y() >> ori.z();
     fin >> rv.w() >> rv.x() >> rv.y() >> rv.z();
+    // Perform bit-wise add operation to decide what domains to load.
     if (load_control & IMU_ORIENTATION) {
       orientation_.push_back(ori);
     }
@@ -58,14 +59,10 @@ IMUDataset::IMUDataset(const std::string &directory, unsigned char load_control)
       rotation_vector_.push_back(rv);
     }
   }
-  // Normalize the time stamp
+  // Convert the unit of time from nano-second to second to simplity velocity computation.
   for (int i = 0; i < kSamples; ++i) {
     timestamp_[i] = timestamp_[i] / kNanoToSec;
   }
-//		const double init_time = timestamp_[0];
-//		for(int i=0; i<kSamples; ++i){
-//			timestamp_[i] = timestamp_[i] - init_time;
-//		}
 }
 
 void WriteToPly(const std::string &path, const double *ts, const Eigen::Vector3d *position,
@@ -76,14 +73,6 @@ void WriteToPly(const std::string &path, const double *ts, const Eigen::Vector3d
   mesh.request_vertex_colors();
 
   constexpr int axis_color[3][3] = {{0, 200, 0}, {0, 255, 0}, {0, 0, 255}};
-
-  // compute speed
-  std::vector<double> speed((size_t) N, 0.0);
-  for (auto i = 1; i < N; ++i) {
-    speed[i] = ((position[i] - position[i - 1]) / (ts[i] - ts[i - 1])).norm();
-  }
-
-  const double max_speed = *std::max_element(speed.begin(), speed.end());
 
   // First add trajectory points
   for (int i = 0; i < N; ++i) {
@@ -123,35 +112,6 @@ void WriteToPly(const std::string &path, const double *ts, const Eigen::Vector3d
   } catch (const std::runtime_error &e) {
     CHECK(true) << e.what();
   }
-}
-
-std::vector<double> ParseCommaSeparatedLine(const std::string &input) {
-  CHECK_GT(input.length(), 0);
-  int st = 0, ed = (int) input.size();
-  // skip the space from the begining
-  while (input[st] == '\0') {
-    st++;
-  }
-  while (input[ed - 1] == '\0') {
-    ed--;
-  }
-
-  std::vector<double> values;
-  for (auto i = st + 1; i <= ed; ++i) {
-    if (i == ed && i > st) {
-      values.push_back(std::stod(input.substr(st, i)));
-      break;
-    }
-    if ((input[i] == ',' || input[i] == '\n') && i > st) {
-      values.push_back(std::stod(input.substr(st, i)));
-      st = i + 1;
-      // skip potential spaces after a comma
-      while (input[st] == '\0') {
-        st++;
-      }
-    }
-  }
-  return values;
 }
 
 }//namespace ridi

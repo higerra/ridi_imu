@@ -9,7 +9,7 @@
 using namespace std;
 using namespace cv;
 
-namespace IMUProject {
+namespace ridi {
 
 cv::Mat ComputeLocalSpeedTarget(const std::vector<double> &time_stamp,
                                 const std::vector<Eigen::Vector3d> &position,
@@ -50,7 +50,7 @@ cv::Mat ComputeLocalSpeedTarget(const std::vector<double> &time_stamp,
   return local_speed;
 }
 
-// This function is mostly the replicate of the ComputeLocalSpeedTarget function.
+
 cv::Mat ComputeLocalSpeedTargetGravityAligned(const std::vector<double>& time_stamp,
                                               const std::vector<Eigen::Vector3d>& position,
                                               const std::vector<Eigen::Quaterniond>& orientation,
@@ -113,30 +113,6 @@ cv::Mat ComputeDirectFeature(const Eigen::Vector3d* gyro,
   }
   // Flatten the feature matrix to a row vector
   return feature_filtered.reshape(1, 1);
-}
-
-Eigen::Vector3d AdjustEulerAngle(const Eigen::Vector3d &input) {
-  // pitch has to be inside (-pi/2, pi/2), roll and yaw has to be inside (-pi, pi)
-  Eigen::Vector3d output = input;
-  if (output[0] < -M_PI / 2) {
-    output[0] += M_PI;
-    output[1] = (output[1] - M_PI) * -1;
-    output[2] += M_PI;
-  } else if (output[0] > M_PI / 2) {
-    output[0] -= M_PI;
-    output[1] = (output[1] - M_PI) * -1;
-    output[2] -= M_PI;
-  }
-
-  for (auto j = 1; j < 3; ++j) {
-    if (output[j] < M_PI) {
-      output[j] += 2 * M_PI;
-    }
-    if (output[j] > M_PI) {
-      output[j] -= 2 * M_PI;
-    }
-  }
-  return output;
 }
 
 cv::Mat ComputeDirectFeatureGravity(const Eigen::Vector3d* gyro,
@@ -215,4 +191,4 @@ void CreateFeatureMat(const TrainingDataOption& option, const IMUDataset& data, 
   }
 }
 
-}  // namespace IMUProject
+}  // namespace ridi

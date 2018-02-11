@@ -15,18 +15,16 @@
 
 #include "utility/data_io.h"
 
-namespace IMUProject {
+namespace ridi {
 
 enum TargetType {
   LOCAL_SPEED,
   LOCAL_SPEED_GRAVITY_ALIGNED,
-  SPEED_MAGNITUDE,
 };
 
 enum FeatureType {
   DIRECT,
   DIRECT_GRAVITY_ALIGNED,
-  FOURIER
 };
 
 struct TrainingDataOption {
@@ -34,11 +32,16 @@ struct TrainingDataOption {
                               const FeatureType feature = DIRECT_GRAVITY_ALIGNED,
                               const TargetType target = LOCAL_SPEED_GRAVITY_ALIGNED) :
       step_size(step), window_size(window), feature_type(feature), target_type(target) {}
+  // A feature vector/regression target will be computed every "step_size" frames.
   int step_size;
+  // Frames inside the local window (i-window_size, i] will be used to construct the feature vector for frame i.
   int window_size;
 
+  // The IMU readings will be gaussian-smoothed with the "feature_smooth_sigma" before feature construction.
   double feature_smooth_sigma = 2.0;
+  // The computed regression target (i.e. velocity) will be gaussian-smoothed with the "target_smooth_sigma".
   double target_smooth_sigma = 30.0;
+
   FeatureType feature_type;
   TargetType target_type;
 
@@ -62,10 +65,8 @@ cv::Mat ComputeLocalSpeedTargetGravityAligned(const std::vector<double>& time_st
 
 cv::Mat ComputeDirectFeature(const Eigen::Vector3d* gyro,
                              const Eigen::Vector3d* linacce,
-                             const int N,
-                             const double sigma = -1);
+                             const int N, const double sigma = -1);
 
-Eigen::Vector3d AdjustEulerAngle(const Eigen::Vector3d &input);
 
 cv::Mat ComputeDirectFeatureGravity(const Eigen::Vector3d* gyro,
                                     const Eigen::Vector3d* linacce,
@@ -73,8 +74,9 @@ cv::Mat ComputeDirectFeatureGravity(const Eigen::Vector3d* gyro,
                                     const int N, const double sigma = -1,
                                     const Eigen::Vector3d local_gravity = Eigen::Vector3d(0, 1, 0));
 
+// Compute all feature vectors given the full dataset. The number of feature vectors is controlled by the option.
 void CreateFeatureMat(const TrainingDataOption& option, const IMUDataset& data, cv::Mat* feature);
 
-} // namespace IMUProject
+} // namespace ridi
 
 #endif //PROJECT_SPEED_REGRESSION_H

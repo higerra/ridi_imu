@@ -10,7 +10,6 @@
 
 #include <Eigen/Eigen>
 #include <glog/logging.h>
-#include <opencv2/opencv.hpp>
 
 namespace ridi {
 
@@ -55,7 +54,8 @@ struct DataLayout {
 
 class IMUDataset {
  public:
-  // Constructor for IMUDataset. "load_control" specifies what domains to load by bit-wise boolean.
+  // Constructor for IMUDataset. When loading the dataset, a bit-wise and operation will be performed with various
+  // pre-defined values to decide what domains to load. See static constexpr variables defined below.
   explicit IMUDataset(const std::string &directory, unsigned char load_control = 255);
 
   inline const std::vector<Eigen::Vector3d> &GetGyro() const {
@@ -124,7 +124,7 @@ class IMUDataset {
     return timestamp_;
   }
 
-  // The binary codes for each domain. For example, if load_control & IMU_GYRO == 1, the gyro data will be loaded.
+  // The binary codes for each domain. For example, if "load_control & IMU_GYRO == 1", the gyro data will be loaded.
   static constexpr unsigned char IMU_GYRO = 1;
   static constexpr unsigned char IMU_ACCELEROMETER = 2;
   static constexpr unsigned char IMU_LINEAR_ACCELERATION = 4;
@@ -161,9 +161,6 @@ void WriteToPly(const std::string &path, const double *ts, const Eigen::Vector3d
                 const Eigen::Quaterniond *orientation, const int N, const bool only_xy = false,
                 const Eigen::Vector3d traj_color = Eigen::Vector3d(0, 255, 255),
                 const double axis_length = 0.5, const int kpoints = 100, const int interval = 200);
-
-// Parse comma separated line into a vector of double numbers.
-std::vector<double> ParseCommaSeparatedLine(const std::string &input);
 
 } //namespace ridi
 #endif //PROJECT_IMU_DATASET_H
