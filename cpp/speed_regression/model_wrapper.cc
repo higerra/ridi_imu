@@ -67,10 +67,6 @@ bool SVRCascade::LoadFromFile(const std::string &path) {
   char buffer[128] = {};
   for (int cls = 0; cls < GetNumClasses(); ++cls) {
     for (int chn = 0; chn < GetNumChannels(); ++chn) {
-      // Skip "transition" label.
-      if (class_names_[cls] == kIgnoreLabel_){
-        continue;
-      }
       int rid = cls * GetNumChannels() + chn;
       sprintf(buffer, "%s/regressor_%d_%d.yaml", path.c_str(), cls, chn);
       regressors_[rid] = cv::ml::SVM::load(buffer);

@@ -10,7 +10,7 @@ import quaternion
 import quaternion.quaternion_time_series
 import pandas
 
-import write_trajectory_to_ply
+from write_trajectory_to_ply import write_ply_to_file
 
 
 def interpolate_quaternion_linear(quat_data, input_timestamp, output_timestamp):

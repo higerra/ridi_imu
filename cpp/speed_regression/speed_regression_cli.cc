@@ -16,7 +16,6 @@
 #include "utility/data_io.h"
 
 DEFINE_string(model_path, "", "Path to the model");
-DEFINE_string(model_type, "cascade", "Type of the model: cascade or single");
 DEFINE_string(data_path, "", "Path to the csv file containing the data");
 DEFINE_string(output_path, "", "Path to the output file. If empty, the output file will be named regressed.txt"
     " and saved to the data folder");
@@ -37,9 +36,14 @@ int main(int argc, char** argv){
 
   TrainingDataOption td_option;
   td_option.feature_smooth_sigma = 2.0;
+  td_option.target_smooth_sigma = 30.0;
+  td_option.feature_type = ridi::DIRECT_GRAVITY_ALIGNED;
+  td_option.target_type = ridi::LOCAL_SPEED_GRAVITY_ALIGNED;
+  
   IMUDataset data(FLAGS_data_path);
   const std::vector<double>& ts = data.GetTimeStamp();
   printf("Number of records: %d\n", (int)ts.size());
+
   Mat feature;
   printf("Compute features...\n");
   ridi::CreateFeatureMat(td_option, data, &feature);
@@ -51,8 +55,12 @@ int main(int argc, char** argv){
   printf("Number of SV in the classifier: %d\n", classifier->getSupportVectors().rows);
 
   for (int i=0; i<10; ++i){
-
+    for (int j=0; j<10; ++j){
+      printf("%.6f\t", feature.at<float>(i, j));
+    }
   }
+  printf("\n");
+  
   for (int i=0; i<10; ++i){
     int label;
     Eigen::VectorXd response(2);
