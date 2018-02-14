@@ -44,28 +44,30 @@ int main(int argc, char** argv){
   const std::vector<double>& ts = data.GetTimeStamp();
   printf("Number of records: %d\n", (int)ts.size());
 
-  Mat feature;
+  Mat feature, target;
   printf("Compute features...\n");
   ridi::CreateFeatureMat(td_option, data, &feature);
   printf("Num samples: %d\n", feature.rows);
-  std::unique_ptr<ModelWrapper> model(new SVRCascade());
-  CHECK(model->LoadFromFile(FLAGS_model_path)) << "Load model failed: " << FLAGS_model_path;
-  auto model_cast = dynamic_cast<SVRCascade*>(model.get());
-  auto classifier = model_cast->GetClassifier();
-  printf("Number of SV in the classifier: %d\n", classifier->getSupportVectors().rows);
 
-  for (int i=0; i<10; ++i){
-    for (int j=0; j<10; ++j){
-      printf("%.6f\t", feature.at<float>(i, j));
+  // std::unique_ptr<ModelWrapper> model(new SVRCascade());
+  // CHECK(model->LoadFromFile(FLAGS_model_path)) << "Load model failed: " << FLAGS_model_path;
+  // auto model_cast = dynamic_cast<SVRCascade*>(model.get());
+  // auto classifier = model_cast->GetClassifier();
+  // printf("Number of SV in the classifier: %d\n", classifier->getSupportVectors().rows);
+
+  for (int i=0; i<feature.rows; i+=100){
+    for (int j=0; j<feature.cols; j+=100){
+      printf("%.6f ", feature.at<float>(i, j));
     }
+    printf("\n");
   }
   printf("\n");
   
-  for (int i=0; i<10; ++i){
-    int label;
-    Eigen::VectorXd response(2);
-    model_cast->Predict(feature.row(i), &response, &label);
-    printf("%d: %d\t%f\t%f\n", i, label, response[0], response[1]);
-  }
+  // for (int i=0; i<10; ++i){
+  //   int label;
+  //   Eigen::VectorXd response(2);
+  //   model_cast->Predict(feature.row(i), &response, &label);
+  //   printf("%d: %d\t%f\t%f\n", i, label, response[0], response[1]);
+  // }
   return 0;
 }

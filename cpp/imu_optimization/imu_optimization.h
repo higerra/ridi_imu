@@ -13,11 +13,12 @@
 #include <ceres/ceres.h>
 #include <ceres/rotation.h>
 
-namespace IMUProject {
+namespace ridi {
 
-// This function defines a sparse grid where the optimization is performed.
+// This class defines a sparse grid where the optimization is performed.
 class SparseGrid {
  public:
+  // Constructor.
   SparseGrid(const double *time_stamp, const int N, const int variable_count,
              const std::vector<int> *variable_ind = nullptr);
 
@@ -95,43 +96,6 @@ struct LocalSpeedFunctor {
   inline const SparseGrid *GetLinacceGrid() const {
     return grid_.get();
   }
-#if false
-  bool operator() (const double* const bx, const double* const by, const double* const bz, double* residual) const{
-          for (int i = 0; i < KCONSTRAINT * 3; ++i) {
-              residual[i] = 0.0;
-          }
-
-          std::vector<Eigen::Matrix <double, 3, 1> > directed_acce(linacce_.size());
-          std::vector<Eigen::Matrix <double, 3, 1> > speed((size_t) Config::kTotalCount);
-          speed[0] = init_speed_ + Eigen::Matrix <double, 3, 1>(std::numeric_limits<double>::epsilon(),
-                                                                std::numeric_limits<double>::epsilon(),
-                                                                std::numeric_limits<double>::epsilon());
-
-          directed_acce[0] = (orientation_[0] * linacce_[0]);
-          for (int i = 0; i < Config::kTotalCount; ++i) {
-              const int inv_ind = grid_->GetInverseIndAt(i);
-              Eigen::Matrix<double, 3, 1> corrected_acce =
-                      linacce_[i] + grid_->GetAlphaAt(i) * Eigen::Matrix<double, 3, 1>(bx[inv_ind], by[inv_ind], bz[inv_ind]);
-              if (inv_ind > 0) {
-                  corrected_acce = corrected_acce + (1.0 - grid_->GetAlphaAt(i)) *
-                                   Eigen::Matrix<double, 3, 1>(bx[inv_ind - 1], by[inv_ind - 1], bz[inv_ind - 1]);
-              }
-              if (i > 0) {
-                  directed_acce[i] = orientation_[i] * corrected_acce;
-                  speed[i] = speed[i - 1] + dt_[i-1] * directed_acce[i - 1];
-              }
-          }
-
-          for (int cid = 0; cid < constraint_ind_.size(); ++cid) {
-              const int ind = constraint_ind_[cid];
-              Eigen::Vector3d ls = orientation_[ind].conjugate() * speed[ind];
-              residual[cid] = weight_ls_ * (ls[0] - local_speed_[cid][0]);
-              residual[cid + KCONSTRAINT] = weight_ls_ * (ls[1] - local_speed_[cid][1]);
-              residual[cid + 2 * KCONSTRAINT] = weight_ls_ * (ls[2] - local_speed_[cid][2]);
-          }
-          return true;
-      }
-#else
   template<typename T>
   bool operator()(const T *const bx, const T *const by, const T *const bz,
                   T *residual) const {
@@ -165,7 +129,6 @@ struct LocalSpeedFunctor {
     }
     return true;
   }
-#endif
 
  private:
   std::shared_ptr<SparseGrid> grid_;
@@ -198,5 +161,5 @@ struct WeightDecay {
 };
 
 
-}  //IMUProject
+}  // namespace ridi
 #endif  //PROJECT_IMU_OPTIMIZATION_H

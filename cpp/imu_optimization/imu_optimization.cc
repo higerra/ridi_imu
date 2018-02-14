@@ -4,7 +4,7 @@
 
 #include "imu_optimization.h"
 
-namespace IMUProject {
+namespace ridi {
 
 SparseGrid::SparseGrid(const double *time_stamp, const int N,
                        const int variable_count,
@@ -43,4 +43,4 @@ SparseGrid::SparseGrid(const double *time_stamp, const int N,
     }
   }
 }
-}//IMUProject
+} // namespace ridi

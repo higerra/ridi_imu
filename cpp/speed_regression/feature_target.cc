@@ -11,8 +11,6 @@ using namespace cv;
 
 namespace ridi {
 
-
-
 cv::Mat ComputeLocalSpeedTarget(const std::vector<double> &time_stamp,
                                 const std::vector<Eigen::Vector3d> &position,
                                 const std::vector<Eigen::Quaterniond> &orientation,

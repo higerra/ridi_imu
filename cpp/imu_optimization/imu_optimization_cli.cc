@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
   char buffer[256] = {};
 
   printf("Loading...\n");
-  IMUProject::IMUDataset dataset(argv[1]);
+  ridi::IMUDataset dataset(argv[1]);
 
   const int kTotalCount = (int) dataset.GetTimeStamp().size();
 
@@ -119,7 +119,7 @@ int main(int argc, char **argv) {
     );
     const std::vector<Eigen::Vector3d> gravity_slice(gravity.begin(), gravity.begin() + kTotalCount);
     cv::Mat local_speed_mat =
-        IMUProject::ComputeLocalSpeedTargetGravityAligned(ts_slice, positions_slice, orientations_slice, gravity_slice,
+        ridi::ComputeLocalSpeedTargetGravityAligned(ts_slice, positions_slice, orientations_slice, gravity_slice,
                                                           constraint_ind, FLAGS_target_smooth_sigma);
     CHECK_EQ(local_speed_mat.rows, local_speed.size());
     for (auto i = 0; i < local_speed.size(); ++i) {
@@ -129,12 +129,12 @@ int main(int argc, char **argv) {
     }
   } else {
     printf("Regressing local speed...\n");
-    std::unique_ptr<IMUProject::ModelWrapper> model(new IMUProject::SVRCascade(FLAGS_model_path));
+    std::unique_ptr<ridi::ModelWrapper> model(new ridi::SVRCascade(FLAGS_model_path));
 #pragma omp parallel for
     for (int i = 0; i < constraint_ind.size(); ++i) {
       const int sid = constraint_ind[i] - FLAGS_window;
       const int eid = constraint_ind[i];
-      cv::Mat feature = IMUProject::ComputeDirectFeatureGravity(&gyro[sid], &linacce[sid], &gravity[sid],
+      cv::Mat feature = ridi::ComputeDirectFeatureGravity(&gyro[sid], &linacce[sid], &gravity[sid],
                                                                 FLAGS_window, FLAGS_feature_smooth_sigma);
       Eigen::VectorXd response(2);
       model->Predict(feature, &response);
@@ -154,7 +154,7 @@ int main(int argc, char **argv) {
     // Initialize bias with gaussian distribution
     std::vector<double> bx((size_t) kSparsePoint, 0.0), by((size_t) kSparsePoint, 0.0), bz((size_t) kSparsePoint,
                                                                                            0.0);
-    using FunctorTypeLinacce = IMUProject::LocalSpeedFunctor<kSparsePoint, kResiduals>;
+    using FunctorTypeLinacce = ridi::LocalSpeedFunctor<kSparsePoint, kResiduals>;
 
     FunctorTypeLinacce
         *functor = new FunctorTypeLinacce(ts.data(),
@@ -241,20 +241,20 @@ int main(int argc, char **argv) {
   }
 
   std::vector<Eigen::Vector3d>
-      directed_corrected_linacce = IMUProject::Rotate3DVector(corrected_linacce, corrected_orientation);
-  std::vector<Eigen::Vector3d> corrected_speed = IMUProject::Integration(ts, directed_corrected_linacce);
+      directed_corrected_linacce = ridi::Rotate3DVector(corrected_linacce, corrected_orientation);
+  std::vector<Eigen::Vector3d> corrected_speed = ridi::Integration(ts, directed_corrected_linacce);
   std::vector<Eigen::Vector3d>
-      corrected_position = IMUProject::Integration(ts, corrected_speed, dataset.GetPosition()[0]);
+      corrected_position = ridi::Integration(ts, corrected_speed, dataset.GetPosition()[0]);
 
   sprintf(buffer, "%s/optimized_cpp_gaussian.ply", argv[1]);
-  IMUProject::WriteToPly(std::string(buffer), ts.data(), corrected_position.data(), orientation.data(), kTotalCount);
+  ridi::WriteToPly(std::string(buffer), ts.data(), corrected_position.data(), orientation.data(), kTotalCount);
 
-  std::vector<Eigen::Vector3d> directed_linacce = IMUProject::Rotate3DVector(linacce, orientation);
-  std::vector<Eigen::Vector3d> speed = IMUProject::Integration(ts, directed_linacce);
-  std::vector<Eigen::Vector3d> raw_position = IMUProject::Integration(ts, speed, dataset.GetPosition()[0]);
+  std::vector<Eigen::Vector3d> directed_linacce = ridi::Rotate3DVector(linacce, orientation);
+  std::vector<Eigen::Vector3d> speed = ridi::Integration(ts, directed_linacce);
+  std::vector<Eigen::Vector3d> raw_position = ridi::Integration(ts, speed, dataset.GetPosition()[0]);
 
   sprintf(buffer, "%s/raw.ply", argv[1]);
-  IMUProject::WriteToPly(std::string(buffer), ts.data(), raw_position.data(), orientation.data(), kTotalCount);
+  ridi::WriteToPly(std::string(buffer), ts.data(), raw_position.data(), orientation.data(), kTotalCount);
 
   return 0;
 }

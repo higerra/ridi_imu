@@ -340,7 +340,6 @@ def load_datalist(path, option, class_map=None):
     if class_map is None:
         class_map = {}
         build_classmap = True
-    imu_columns = ['gyro_x', 'gyro_y', 'gyro_z', 'linacce_x', 'linacce_y', 'linacce_z']
     for dataset in dataset_list:
         if len(dataset) > 0 and dataset[0] == '#':
             continue
@@ -363,8 +362,7 @@ def load_datalist(path, option, class_map=None):
         data_all = pandas.read_csv(data_path)
         extra_args = {'target_smooth_sigma': 30.0,
                       'feature_smooth_sigma': 2.0}
-        feature, target = td.get_training_data(data_all=data_all, imu_columns=imu_columns,
-                                               option=option, extra_args=extra_args)
+        feature, target = td.get_training_data(data_all=data_all, option=option, extra_args=extra_args)
         feature_all.append(feature)
         responses_all.append(target)
         label = class_map[info[1]]

@@ -165,7 +165,7 @@ def compute_delta_angle(time_stamp, position, orientation, sample_points=None,
     return cos_array, valid_array
 
 
-def get_training_data(data_all, imu_columns, option, sample_points=None, extra_args=None):
+def get_training_data(data_all, option, sample_points=None, extra_args=None):
     """
     Create training data.
     
@@ -177,16 +177,15 @@ def get_training_data(data_all, imu_columns, option, sample_points=None, extra_a
     :param extra_args: Extra arguments.
     :return: [Nx(d+1)] array. Target value is appended at back
     """
-    N = data_all.shape[0]
     if sample_points is None:
         sample_points = np.arange(option.window_size_,
-                                  N - 1,
+                                  data_all.shape[0] - 1,
                                   option.sample_step_,
                                   dtype=int)
-    assert sample_points[-1] < N
+    assert sample_points[-1] < data_all.shape[0]
     pose_data = data_all[['pos_x', 'pos_y', 'pos_z']].values
     orientation = data_all[['ori_w', 'ori_x', 'ori_y', 'ori_z']].values
-    data_used = data_all[imu_columns].values
+    data_used = data_all[['gyro_x', 'gyro_y', 'gyro_z', 'linacce_x', 'linacce_y', 'linacce_z']].values
     time_stamp = data_all['time'].values / 1e09
 
     targets = None
