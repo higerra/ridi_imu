@@ -15,10 +15,14 @@
 
 namespace ridi {
 
-// This class defines a sparse grid where the optimization is performed.
+// This class defines a sparse grid where the optimization is performed. We define the optimization problem on a
+// subsampled grid of frames. Variables at other frames interpolated from two nearest grid points.
 class SparseGrid {
  public:
-  // Constructor.
+  // Constructor. Time stamps are passed by the pointer and N is the number of frames. "variable_count" controls the
+  // number of variables defined. For example, for a sequence with 1000 frames, if variable_count = 10, then variables
+  // will be created at 1000 frames. Optional a vector of variable_ind can be passed indicating the frame indices
+  // where variables are expected to be created. If not nullptr, variable_ind->size() must equal to variable_count.
   SparseGrid(const double *time_stamp, const int N, const int variable_count,
              const std::vector<int> *variable_ind = nullptr);
 
@@ -59,8 +63,12 @@ class SparseGrid {
   const int kTotalCount;
   const int kVariableCount;
 
+  // Given the number of all frames and indices of grid points, it is possible to precompute the interpolation weights.
+  // The vector "alpha_" stores kTotalCount weights.
   std::vector<double> alpha_;
+  //
   std::vector<int> inverse_ind_;
+  // Frame indices of the sparse grid points.
   std::vector<int> variable_ind_;
 };
 
