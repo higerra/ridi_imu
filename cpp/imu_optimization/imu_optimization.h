@@ -47,6 +47,9 @@ class SparseGrid {
   inline const int GetTotalCount() const {
     return kTotalCount;
   }
+
+  // Given estimated 3D bias bx, by and bz on the sparse grid, correct the 3D signal (e.g. linear acceleration)
+  // with interpolation weights.
   template<typename T>
   void correct_linacce_bias(Eigen::Matrix<T, 3, 1> *data, const T *bx, const T *by, const T *bz,
                             const Eigen::Matrix<T, 3, 1> bias_global = Eigen::Matrix<T, 3, 1>::Zero()) const {
@@ -72,6 +75,7 @@ class SparseGrid {
   std::vector<int> variable_ind_;
 };
 
+// This functor minimizes the difference between integrated local speed and regressed ones.
 template<int KVARIABLE, int KCONSTRAINT>
 struct LocalSpeedFunctor {
  public:
@@ -152,6 +156,8 @@ struct LocalSpeedFunctor {
   std::vector<double> weight_vs_;
 };
 
+
+// This functor enforces Gaussian prior to the variable.
 template<int KVARIABLE>
 struct WeightDecay {
  public:

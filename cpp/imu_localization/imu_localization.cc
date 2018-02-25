@@ -9,7 +9,7 @@
 #include "algorithm/geometry.h"
 #include "speed_regression/feature_target.h"
 
-namespace IMUProject {
+namespace ridi {
 
 using Functor600 = LocalSpeedFunctor<FunctorSize::kVar_600, FunctorSize::kCon_600>;
 using Functor800 = LocalSpeedFunctor<FunctorSize::kVar_800, FunctorSize::kCon_800>;
@@ -50,9 +50,7 @@ void IMUTrajectory::AddRecord(const double t, const Eigen::Vector3d &gyro, const
 
   Eigen::Quaterniond rotor_g = Eigen::Quaterniond::FromTwoVectors(gravity, local_gravity_dir_);
   R_GW_.push_back(rotor_g * orientation.conjugate());
-  //R_GW_.push_back(orientation.conjugate());
 
-  //TODO: Try to remove this lock...
   std::lock_guard<std::mutex> guard(mt_);
   if (num_frames_ > 1) {
     const double dt = ts_[num_frames_ - 1] - ts_[num_frames_ - 2];
@@ -66,7 +64,7 @@ void IMUTrajectory::AddRecord(const double t, const Eigen::Vector3d &gyro, const
 
 void IMUTrajectory::CommitOptimizationResult(const SparseGrid *grid, const int start_id,
                                              const double *bx, const double *by, const double *bz) {
-  // correct acceleration and re-do double integration
+  // Correct acceleration and re-do double integration
   CHECK_NOTNULL(grid)->correct_linacce_bias<double>(&linacce_[start_id], bx, by, bz);
   std::lock_guard<std::mutex> guard(mt_);
   for (int i = start_id + 1; i < num_frames_; ++i) {
@@ -76,6 +74,7 @@ void IMUTrajectory::CommitOptimizationResult(const SparseGrid *grid, const int s
   }
 }
 
+  
 int IMUTrajectory::RegressSpeed(const int end_ind) {
   const int old_label_counts = static_cast<int>(labels_.size());
   for (int i = last_constraint_ind_ + option_.reg_interval; i < end_ind; i += option_.reg_interval) {
@@ -130,6 +129,7 @@ int IMUTrajectory::RegressSpeed(const int end_ind) {
       }
     }
      if (transition_counts_[i] > option_.max_allowed_transition){
+       // Transition state identified, overwrite the regressed speed to 0.
        local_speed_[i] = Eigen::Vector3d(0, 0, 0);
      }
   }
@@ -139,6 +139,7 @@ int IMUTrajectory::RegressSpeed(const int end_ind) {
   return 0;
 }
 
+  
 void IMUTrajectory::RunOptimization(const int start_id, const int N) {
   CHECK_GE(start_id, 0);
   CHECK_GE(N, 600);
@@ -263,4 +264,4 @@ void IMUTrajectory::StartOptmizationThread() {
   }
   LOG(INFO) << "Background thread terminated";
 }
-}//namespace IMUProject
+}//namespace ridi
