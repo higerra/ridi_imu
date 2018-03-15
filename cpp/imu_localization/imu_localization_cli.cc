@@ -14,29 +14,24 @@
 
 #include "algorithm/geometry.h"
 #include "utility/data_io.h"
-#include "utility/utility.h"
 #include "utility/stlplus3/file_system.hpp"
 
-DEFINE_string(model_path, "../../../../models/svr_cascade1116_2", "Path to model");
-DEFINE_string(mapinfo_path, "default", "path to map info");
+DEFINE_string(model_path, "../../../models/svr_cascade1116_2", "Path to model");
 DEFINE_int32(log_interval, 1000, "logging interval");
 DEFINE_string(color, "blue", "color");
 DEFINE_double(weight_vs, 1.0, "The weight parameter for vertical speed. Larger weight_vs imposes more penalty for"
-    " the vertical speed not being 0.");
+	      " the vertical speed not being 0.");
 DEFINE_double(weight_ls, 10.0, "The weight parameter for the local speed. Larger weight_ls imposes more penalty for"
-    " the integrated local speed being different than the regressed speed.");
+	      " the integrated local speed being different than the regressed speed.");
 DEFINE_string(suffix, "full", "suffix");
 DEFINE_string(preset, "none", "preset mode");
 
-DEFINE_bool(register_to_reference_global, true, "If the ground truth trajectory is provided and this term is set"
-    " to true, a global transformation will be estimated that aligns the start portion of the estimated trajectory "
-    "to the ground truth.");
 DEFINE_bool(register_start_portion_2d, true,
             "If set to true, estimate a 2D global transformation that aligns the start portion of the estimated "
-                "trajector with the ground truth. Only useful with FLAGS_estimate_global_transformation is true.");
+	    "trajector with the ground truth. Only useful with FLAGS_estimate_global_transformation is true.");
 DEFINE_int32(start_portion_length, 2500, "The length (in frames) of the start portion. These frames will be used to "
-    "estimate the global transformation from the estimated trajectory to the ground truth. Set to -1 to use the "
-    "entire trajectory");
+	     "estimate the global transformation from the estimated trajectory to the ground truth. Set to -1 to use the "
+	     "entire trajectory");
 
 DEFINE_bool(run_global, true, "Run global optimization at the end");
 DEFINE_bool(tango_ori, false, "Use ground truth orientation");
@@ -55,7 +50,7 @@ int main(int argc, char **argv) {
 
   LOG(INFO) << "Initializing...";
   // load data
-  IMUProject::IMUDataset dataset(argv[1]);
+  ridi::IMUDataset dataset(argv[1]);
 
 
   // Run the system
@@ -73,12 +68,14 @@ int main(int argc, char **argv) {
   } else {
     LOG(INFO) << "Use rotation vector";
     orientation = dataset.GetRotationVector();
-    Eigen::Quaterniond rotor = IMUProject::OrientationFromMagnet(gravity[0], magnet[0]);
+    Eigen::Quaterniond rotor = ridi::OrientationFromMagnet(gravity[0], magnet[0]);
     for (int i=0; i < orientation.size(); ++i){
       orientation[i] = rotor * orientation[i];
     }
   }
 
+  // Set the output trajectory color. Note that "color" argument will be overwritten
+  // by "preset" argument.
   Eigen::Vector3d traj_color(0, 0, 255);
   if (FLAGS_color == "yellow") {
     traj_color = Eigen::Vector3d(128, 128, 0);
@@ -88,24 +85,23 @@ int main(int argc, char **argv) {
     traj_color = Eigen::Vector3d(0, 128, 128);
   }
 
-  // crete trajectory instance
-  IMUProject::IMULocalizationOption loc_option;
+  ridi::IMULocalizationOption loc_option;
   loc_option.weight_ls = FLAGS_weight_ls;
   loc_option.weight_vs = FLAGS_weight_vs;
   if (FLAGS_preset == "full") {
-    loc_option.reg_option = IMUProject::FULL;
+    loc_option.reg_option = ridi::FULL;
     FLAGS_suffix = "full";
     traj_color = Eigen::Vector3d(0, 0, 255);
   } else if (FLAGS_preset == "ori_only") {
-    loc_option.reg_option = IMUProject::ORI;
+    loc_option.reg_option = ridi::ORI;
     FLAGS_suffix = "ori_only";
     traj_color = Eigen::Vector3d(0, 200, 0);
   } else if (FLAGS_preset == "mag_only") {
-    loc_option.reg_option = IMUProject::MAG;
+    loc_option.reg_option = ridi::MAG;
     FLAGS_suffix = "mag_only";
     traj_color = Eigen::Vector3d(139, 0, 139);
   } else if (FLAGS_preset == "const") {
-    loc_option.reg_option = IMUProject::CONST;
+    loc_option.reg_option = ridi::CONST;
     FLAGS_suffix = "const";
     traj_color = Eigen::Vector3d(150, 150, 0);
   } else if (FLAGS_preset == "raw"){
@@ -132,7 +128,7 @@ int main(int argc, char **argv) {
   std::vector<Eigen::Vector3d> output_bias(dataset.GetTimeStamp().size(), Eigen::Vector3d(0, 0, 0));
 
   if (FLAGS_preset == "raw"){
-    // Write trajectory with double integration
+    // Write trajectory with double integration.
     output_positions.resize(dataset.GetTimeStamp().size(), dataset.GetPosition()[0]);
     output_speed.resize(dataset.GetTimeStamp().size(), Eigen::Vector3d(0, 0, 0));
     output_linacce = dataset.GetLinearAcceleration();
@@ -144,12 +140,12 @@ int main(int argc, char **argv) {
       output_positions[i][2] = 0;
     }
   } else {
-    // load regressor
-    std::unique_ptr<IMUProject::ModelWrapper> model(new IMUProject::SVRCascade(FLAGS_model_path));
+    // Load regression.
+    std::unique_ptr<ridi::ModelWrapper> model(new ridi::SVRCascade(FLAGS_model_path));
     LOG(INFO) << "Model " << FLAGS_model_path << " loaded";
 
-    IMUProject::TrainingDataOption td_option;
-    IMUProject::IMUTrajectory trajectory(loc_option, td_option, Eigen::Vector3d(0, 0, 0),
+    ridi::TrainingDataOption td_option;
+    ridi::IMUTrajectory trajectory(loc_option, td_option, Eigen::Vector3d(0, 0, 0),
                                          dataset.GetPosition()[0], model.get());
 
     float start_t = (float) cv::getTickCount();
@@ -199,6 +195,7 @@ int main(int argc, char **argv) {
     output_speed = trajectory.GetSpeed();
     output_linacce = trajectory.GetLinearAcceleration();
 
+    // Write the regression result to a text file.
     sprintf(buffer, "%s/regression_%s.txt", result_dir_path, FLAGS_suffix.c_str());
     ofstream reg_out(buffer);
     const std::vector<int> &cids = trajectory.GetConstraintInd();
@@ -216,116 +213,57 @@ int main(int argc, char **argv) {
   const std::vector<Eigen::Vector3d> &gt_positions = dataset.GetPosition();
   Eigen::Vector3d sum_gt_position = std::accumulate(gt_positions.begin(), gt_positions.end(),
 						    Eigen::Vector3d(0, 0, 0));
+
+  // Some dataset does not come with groud truth pose (filled with 0). In this case we skip the registration.
   bool is_gt_valid = sum_gt_position.norm() > std::numeric_limits<double>::epsilon();
-  if (FLAGS_register_to_reference_global) {
-    printf("Estimating global transformation\n");
-    Eigen::Matrix4d global_transform;
-    Eigen::Matrix3d global_rotation = Eigen::Matrix3d::Identity();
-    Eigen::Vector3d global_translation;
-    if(is_gt_valid) {
-      IMUProject::EstimateTransformation(output_positions, gt_positions, &global_transform, &global_rotation,
-                                         &global_translation);
+  if (FLAGS_register_start_portion_2d && is_gt_valid) {
+    if (FLAGS_start_portion_length < 0) {
+      FLAGS_start_portion_length = static_cast<int>(output_positions.size());
     }
+    printf("Registring start portion. Length: %d\n", FLAGS_start_portion_length);
+    CHECK_GT(FLAGS_start_portion_length, 3) << "The start portion length must be larger than 3";
+    std::vector<Eigen::Vector2d> source;
+    std::vector<Eigen::Vector2d> target;
+    for (int i = 0; i < FLAGS_start_portion_length; ++i) {
+      source.push_back(output_positions[i].block<2, 1>(0, 0));
+      target.push_back(gt_positions[i].block<2, 1>(0, 0));
+    }
+    Eigen::Matrix3d transform_2d;
+    Eigen::Matrix2d rotation_2d;
+    Eigen::Vector2d translation_2d;
+    ridi::EstimateTransformation<2>(source, target, &transform_2d, &rotation_2d, &translation_2d);
+    Eigen::Matrix3d rotation_2d_as_3d = Eigen::Matrix3d::Identity();
+    rotation_2d_as_3d.block<2, 2>(0, 0) = rotation_2d;
     for (int i = 0; i < output_positions.size(); ++i) {
-      output_positions[i] = global_rotation * (output_positions[i] - gt_positions[0]) + gt_positions[0];
-      output_orientation[i] = global_rotation * output_orientation[i];
+      Eigen::Vector2d pt_centered = (output_positions[i] - gt_positions[0]).block<2, 1>(0, 0);
+      Eigen::Vector2d transformed = rotation_2d * pt_centered + gt_positions[0].block<2, 1>(0, 0);
+
+      output_positions[i][0] = transformed[0];
+      output_positions[i][1] = transformed[1];
+      output_orientation[i] = rotation_2d_as_3d * output_orientation[i];
     }
-
-    if (FLAGS_register_start_portion_2d && is_gt_valid) {
-      if (FLAGS_start_portion_length < 0) {
-        FLAGS_start_portion_length = static_cast<int>(output_positions.size());
-      }
-      printf("Registring start portion. Length: %d\n", FLAGS_start_portion_length);
-      CHECK_GT(FLAGS_start_portion_length, 3) << "The start portion length must be larger than 3";
-      std::vector<Eigen::Vector2d> source;
-      std::vector<Eigen::Vector2d> target;
-      for (int i = 0; i < FLAGS_start_portion_length; ++i) {
-        source.push_back(output_positions[i].block<2, 1>(0, 0));
-        target.push_back(gt_positions[i].block<2, 1>(0, 0));
-      }
-      Eigen::Matrix3d transform_2d;
-      Eigen::Matrix2d rotation_2d;
-      Eigen::Vector2d translation_2d;
-      IMUProject::EstimateTransformation<2>(source, target, &transform_2d, &rotation_2d, &translation_2d);
-      Eigen::Matrix3d rotation_2d_as_3d = Eigen::Matrix3d::Identity();
-      rotation_2d_as_3d.block<2, 2>(0, 0) = rotation_2d;
-      for (int i = 0; i < output_positions.size(); ++i) {
-//        Eigen::Vector2d transformed = rotation_2d * (output_positions[i].block<2, 1>(0, 0) - translation_2d)
-//            + translation_2d;
-        Eigen::Vector2d pt_centered = (output_positions[i] - gt_positions[0]).block<2, 1>(0, 0);
-        Eigen::Vector2d transformed = rotation_2d * pt_centered + gt_positions[0].block<2, 1>(0, 0);
-
-        output_positions[i][0] = transformed[0];
-        output_positions[i][1] = transformed[1];
-        output_orientation[i] = rotation_2d_as_3d * output_orientation[i];
-      }
-    }
-
-
   }
 
+
+  // Save estimated trajectory as the ply file.
   const int kFrames = output_positions.size();
   sprintf(buffer, "%s/result_trajectory_%s.ply", result_dir_path, FLAGS_suffix.c_str());
-  IMUProject::WriteToPly(std::string(buffer), dataset.GetTimeStamp().data(), output_positions.data(),
+  ridi::WriteToPly(std::string(buffer), dataset.GetTimeStamp().data(), output_positions.data(),
                          output_orientation.data(), kFrames, false, traj_color, 0);
 
-  sprintf(buffer, "%s/tango_trajectory.ply", result_dir_path);
-  IMUProject::WriteToPly(std::string(buffer), dataset.GetTimeStamp().data(), dataset.GetPosition().data(),
-                         dataset.GetOrientation().data(), (int) dataset.GetPosition().size(),
-                         false, Eigen::Vector3d(255, 0, 0), 0.8, 100, 300);
-
-  {
-    // // Write the trajectory and bias as txt
-    // sprintf(buffer, "%s/result_%s.csv", result_dir_path, FLAGS_suffix.c_str());
-    // ofstream traj_out(buffer);
-    // CHECK(traj_out.is_open());
-    // traj_out << ",time,pos_x,pos_y,pos_z,speed_x,speed_y,speed_z,bias_x,bias_y,bias_z" << endl;
-    // for (auto i = 0; i < kFrames; ++i) {
-    //   const Eigen::Vector3d &pos = output_positions[i];
-    //   const Eigen::Vector3d &acce = output_linacce[i];
-    //   const Eigen::Vector3d &spd = output_speed[i];
-    //   sprintf(buffer, "%d,%.9f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
-    //           i, dataset.GetTimeStamp()[i], pos[0], pos[1], pos[2], spd[0], spd[1], spd[2],
-    //           acce[0] - linacce[i][0], acce[1] - linacce[i][1], acce[2] - linacce[i][2]);
-    //   traj_out << buffer;
-    // }
-  }
-
-  if (FLAGS_mapinfo_path == "default") {
-    sprintf(buffer, "%s/map.txt", argv[1]);
-  } else {
-    sprintf(buffer, "%s", FLAGS_mapinfo_path.c_str());
-  }
-  ifstream map_in(buffer);
-  if (map_in.is_open()) {
-    LOG(INFO) << "Found map info file, creating overlay";
-    string line;
-    map_in >> line;
-    sprintf(buffer, "%s/%s", argv[1], line.c_str());
-
-    cv::Mat map_img = cv::imread(buffer);
-    CHECK(map_img.data) << "Can not open image file: " << buffer;
-
-    Eigen::Vector2d sp1, sp2;
-    Eigen::Vector3d op1(0, 0, 0), op2(0, 0, 0);
-    double scale_length;
-
-    map_in >> sp1[0] >> sp1[1] >> sp2[0] >> sp2[1];
-    map_in >> scale_length;
-    map_in >> op1[0] >> op1[1] >> op2[0] >> op2[1];
-
-    Eigen::Vector2d start_pix(op1[0], op1[1]);
-
-    const double pixel_length = scale_length / (sp2 - sp1).norm();
-
-   IMUProject::TrajectoryOverlay(pixel_length, start_pix, op2 - op1, output_positions,
-                                 Eigen::Vector3d(255, 0, 0), map_img);
-
-    IMUProject::TrajectoryOverlay(pixel_length, start_pix, op2 - op1, dataset.GetPosition(),
-                                  Eigen::Vector3d(0, 0, 255), map_img);
-    sprintf(buffer, "%s/overlay_%s.png", result_dir_path, FLAGS_suffix.c_str());
-    cv::imwrite(buffer, map_img);
-    printf("Overlay image written to %s\n", buffer);
+  // Write the trajectory and bias as txt
+  sprintf(buffer, "%s/result_%s.csv", result_dir_path, FLAGS_suffix.c_str());
+  ofstream traj_out(buffer);
+  CHECK(traj_out.is_open());
+  traj_out << ",time,pos_x,pos_y,pos_z,speed_x,speed_y,speed_z,bias_x,bias_y,bias_z" << endl;
+  for (auto i = 0; i < kFrames; ++i) {
+    const Eigen::Vector3d &pos = output_positions[i];
+    const Eigen::Vector3d &acce = output_linacce[i];
+    const Eigen::Vector3d &spd = output_speed[i];
+    sprintf(buffer, "%d,%.9f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f\n",
+	    i, dataset.GetTimeStamp()[i], pos[0], pos[1], pos[2], spd[0], spd[1], spd[2],
+	    acce[0] - linacce[i][0], acce[1] - linacce[i][1], acce[2] - linacce[i][2]);
+    traj_out << buffer;
   }
 
   return 0;

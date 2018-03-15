@@ -15,10 +15,14 @@
 
 namespace ridi {
 
-// This class defines a sparse grid where the optimization is performed.
+// This class defines a sparse grid where the optimization is performed. We define the optimization problem on a
+// subsampled grid of frames. Variables at other frames interpolated from two nearest grid points.
 class SparseGrid {
  public:
-  // Constructor.
+  // Constructor. Time stamps are passed by the pointer and N is the number of frames. "variable_count" controls the
+  // number of variables defined. For example, for a sequence with 1000 frames, if variable_count = 10, then variables
+  // will be created at 1000 frames. Optional a vector of variable_ind can be passed indicating the frame indices
+  // where variables are expected to be created. If not nullptr, variable_ind->size() must equal to variable_count.
   SparseGrid(const double *time_stamp, const int N, const int variable_count,
              const std::vector<int> *variable_ind = nullptr);
 
@@ -43,6 +47,9 @@ class SparseGrid {
   inline const int GetTotalCount() const {
     return kTotalCount;
   }
+
+  // Given estimated 3D bias bx, by and bz on the sparse grid, correct the 3D signal (e.g. linear acceleration)
+  // with interpolation weights.
   template<typename T>
   void correct_linacce_bias(Eigen::Matrix<T, 3, 1> *data, const T *bx, const T *by, const T *bz,
                             const Eigen::Matrix<T, 3, 1> bias_global = Eigen::Matrix<T, 3, 1>::Zero()) const {
@@ -59,11 +66,16 @@ class SparseGrid {
   const int kTotalCount;
   const int kVariableCount;
 
+  // Given the number of all frames and indices of grid points, it is possible to precompute the interpolation weights.
+  // The vector "alpha_" stores kTotalCount weights.
   std::vector<double> alpha_;
+  //
   std::vector<int> inverse_ind_;
+  // Frame indices of the sparse grid points.
   std::vector<int> variable_ind_;
 };
 
+// This functor minimizes the difference between integrated local speed and regressed ones.
 template<int KVARIABLE, int KCONSTRAINT>
 struct LocalSpeedFunctor {
  public:
@@ -144,6 +156,8 @@ struct LocalSpeedFunctor {
   std::vector<double> weight_vs_;
 };
 
+
+// This functor enforces Gaussian prior to the variable.
 template<int KVARIABLE>
 struct WeightDecay {
  public:
