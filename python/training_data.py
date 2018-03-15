@@ -127,12 +127,7 @@ def compute_local_speed_with_gravity(time_stamp, position, orientation, gravity,
         sample_points = np.arange(0, time_stamp.shape[0], dtype=int)
     sample_points[-1] = min(sample_points[-1], time_stamp.shape[0] - 2)
     local_speed = compute_local_speed(time_stamp, position, orientation, sample_points)
-    # rotate the local speed such at the gravity is along $local_gravity direction
-    for i in range(local_speed.shape[0]):
-        g = gravity[sample_points[i]]
-        rot_q = geometry.quaternion_from_two_vectors(g, local_gravity)
-        local_speed[i] = (rot_q * quaternion.quaternion(1.0, *local_speed[i]) * rot_q.conj()).vec
-    return local_speed
+    return geometry.align_3dvector_with_gravity(local_speed, gravity[sample_points], local_gravity)
 
 
 def compute_delta_angle(time_stamp, position, orientation, sample_points=None,

@@ -80,7 +80,8 @@ def align_3dvector_with_gravity(data, gravity, local_g_direction=np.array([0, 1,
         if gd > 1. - epsilon:
             continue
         if gd < -1. + epsilon:
-            output[i, 1] *= -1
+            # Invert the Y and Z axis
+            output[i, 1:] *= -1
             continue
         q = quaternion_from_two_vectors(gravity[i], local_g_direction)
         output[i] = (q * quaternion.quaternion(1.0, *data[i]) * q.conj()).vec
