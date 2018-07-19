@@ -8,7 +8,7 @@
 
 1. *Installing Glog, Gflags, CMake, BLAS & LAPACK*
 
-Referring to the instructions stated on Ceres-Solver Documentation the following commands need to be executed,: 
+Referring to the instructions stated on [Ceres-Solver Documentation](http://ceres-solver.org/installation.html) the following commands need to be executed to install the dependencies for Ceres: 
 ```
 # CMake
 sudo apt-get install cmake
@@ -27,19 +27,13 @@ sudo add-apt-repository ppa:bzindovic/suitesparse-bugfix-1319687
 sudo apt-get update
 sudo apt-get install libsuitesparse-dev
 ```
-Please note: I removed the command to download eigen3 as using `sudo apt-get install libeigen3-dev`
-as of now installs Eigen 3.2.92 To work along with this repo we specifically need a version greater than or equal to 3.3.0, so we can't use that method to install eigen3. We need to manually install and compile Eigen3!
+*NOTE*: We cannot use `sudo apt-get install libeigen3-dev` to download eigen3 as it installs Eigen 3.2.92 As we need a version > 3.3.0, we need to manually install and compile Eigen3!
 
-2. **Installing Eigen3:** You need to check which version of eigen if at all you have one is installed in yoru system. To check the version you can use `pkg-config --modversion eigen3`
+2. **Installing Eigen3:** You need to check which version of eigen3 is installed in your system. To check the version you can use `pkg-config --modversion eigen3`
 
-If the returned value is more than or equal to 3.3.0 then you are through. Else, you need to find where eigen is located and delete it. This is better as we are trying to avoid version conflict in future by having multiple eigen versions installed in our system. To do so I would suggest the following: 
+If the returned value is more than or equal to 3.3.0 then you are through. Else, you need to find where eigen is located and delete it, if present. It isn't necessary, however, to avoid version conflicts we might want it.  
 
-```
-pkg-config --cflags eigen3 #gives you location of eigen in your computer 
-sudo rm -r /usr/local/include/eigen3 # is that is the location of eigen3, else type whatever locations you have for eigen.
-```
-
-Systems involving to many workspaces and virtaul environments  we might wanna use `sudo apt-get remove libeigen3-dev`
+For systems involving to many workspaces and virtaul environments we can use `sudo apt-get remove libeigen3-dev`
 
 After removing the current versions of eigen in your system, you need to download the latest stable release of Eigen3 from [here](http://eigen.tuxfamily.org/index.php?title=Main_Page) and follow the following commands: 
 
@@ -55,7 +49,7 @@ make install
 Once through check your eigen version using `pkg-config --modversion eigen3`
 Congratulations! You have successfully installed eigen3 in your system!
 
-3. **Installing Ceres-Solver**: Ceres documentation works pretty well. You can have a look at it here. We hve already installed the required dependencies. we finally need to run the following commands to build Ceres-Solver: 
+3. **Installing Ceres-Solver**: Run the following commands to build Ceres-Solver: 
 
 ```
 git clone https://ceres-solver.googlesource.com/ceres-solver
@@ -78,7 +72,7 @@ cmake ..
 make all
 make install
 ```
-It's better to use make install, as to remove the current version you could use `make uninstall`
+It's better to use `make install`, as to remove the it you could directly use `make uninstall`
 
 5. **Installing OpenMesh**
 Download the latest stable release of OpenMesh from [here](https://www.openmesh.org/download/). After extracting the files use the following commands: 
@@ -91,16 +85,19 @@ cmake ..
 make all
 make install
 ```
-If you are lucky, OpenMesh will install with the above commands. However, there is a possibility that you might have to use the flag variables that have been described in the [documentation](https://www.openmesh.org/media/Documentations/OpenMesh-Doc-Latest/a03923.html) judiciously to make it work.
+Most likely, OpenMesh will install with the above commands. However, there is a possibility that you might have to use the flag variables that have been described in the [documentation](https://www.openmesh.org/media/Documentations/OpenMesh-Doc-Latest/a03923.html) judiciously to make it work.
 
-One problem that I had faced was it was linking c++98 for some reason so I had to explicitly specify that in the cmake using `cmake .. -DCMAKE_CXX_FLAGS=-std=c++11`
+One standard problem is to link c++11 explicitly, in that case you might need to specify c++ version in the cmake 
+```
+cmake .. -DCMAKE_CXX_FLAGS=-std=c++11
+```
 
 *Please do refer to the flags that can be passed to cmake very judiciously in case you are not able to build OpenMesh!* 
 
-### Python
-1. **Install Anaconda3**: We would recommend that you use Anaconda, and hence the guide goes along assuming you have Anaconda installed in your system. You get the latest version of Anaconda supporting python3 [here](https://www.anaconda.com/download/#linux).
+### Python3
+1. **Install Anaconda3**: We would recommend that you use Anaconda, and hence the guide goes along assuming you have Anaconda installed in your system. You can get the latest version of Anaconda supporting python3 [here](https://www.anaconda.com/download/#linux).
 
-2. As you install the above you already have the latest version of Numpy and Scipy, there within it. So next lets get onto installing **plyfile** and **quaternion**.
+2. As you install the above you already have the latest version of Numpy and Scipy, there within it. So next we need to install **plyfile** and **quaternion**.
 ```
 pip install plyfile 
 conda install -c conda-forge quaternion 
@@ -111,7 +108,7 @@ conda install -c conda-forge quaternion
 conda install -c menpo opencv3
 ```
 
-Next refer to the **Data Format** and **Usage** as you complete installing all the dependencies there to run the code!  
+Now as your system is ready with all the dependencies to run the code refer to the **Data Format** and **Usage** to finally make it work!
 
 ## Data format
 The dataset used by this project is collected by a specific Tango App:
