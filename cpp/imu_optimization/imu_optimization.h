@@ -7,7 +7,6 @@
 
 #include <memory>
 
-#include <opencv2/opencv.hpp>
 #include <Eigen/Eigen>
 #include <glog/logging.h>
 #include <ceres/ceres.h>

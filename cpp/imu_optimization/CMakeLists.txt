@@ -9,7 +9,7 @@ find_package(Eigen REQUIRED)
 find_package(Glog REQUIRED)
 find_package(Gflags REQUIRED)
 
-include_directories(${EIGEN_INCLUDE_DIRS} ${CERES_INCLUDE_DIRS} {OpenCV_INCLUDE_DIRS})
+include_directories(${EIGEN_INCLUDE_DIRS} ${CERES_INCLUDE_DIRS})
 
 add_library(IMUOptimization imu_optimization.h imu_optimization.cc)
 target_link_libraries(IMUOptimization ${CERES_LIBRARIES} ${GLOG_LIBRARY})
