@@ -1,7 +1,7 @@
 # RIDI: Robust IMU Double Integration
 ## Prerequisite
   * Python: numpy, scipy, opencv-python (>3.0), numpy-quaternion, plyfile
-  * C++: Glog, Gflags, OpenCV (>3.0), Eigen, Ceres-Solver, OpenMesh
+  * C++: Glog, Gflags, OpenCV (>3.0), Eigen (>3.3), Ceres-Solver, OpenMesh
 ## Data format
 The dataset used by this project is collected by a specific Tango App:
 [https://github.com/higerra/TangoIMURecorder](https://github.com/higerra/TangoIMURecorder)
