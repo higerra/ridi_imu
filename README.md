@@ -1,4 +1,11 @@
 # RIDI: Robust IMU Double Integration
+## Introducing RoNIN: Robust Inertial Neural Navigation
+We have developed a far superior algorithm based on deep learning, which is simpler, more accurate and more generalizable:
+RoNIN: Robust Nueral Inertial Navigation
+http://ronin.cs.sfu.ca/
+
+We highly recommend you try the new algorithm instead of RIDI. It is still beneficial to read the RIDI paper for our initial idea of data-driven inertial navigation, but I would NOT suggest you dive too deep into the code.
+
 ## Prerequisite
   * Python: numpy, scipy, opencv-python (>3.0), numpy-quaternion, plyfile
   * C++: Glog, Gflags, OpenCV (>3.0), Eigen (>3.3), Ceres-Solver, OpenMesh
