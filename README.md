@@ -20,7 +20,7 @@ Note that without a Tango phone, the ground truth trajectory will not be availab
 
 ## Usage:
   1. Clone the repository.
-  2. (Optional) Download the dataset from [HERE](https://wustl.box.com/s/6lzfkaw00w76f8dmu0axax7441xcrzd9) and the pre-trained model from [HERE](https://wustl.box.com/s/fsjta6399idcb9lmd6maf4e215wxbp6i). Note that the pre-trained model is trained from a small group of people. For the best result please train your own model.
+  2. (Optional) Download the dataset from [HERE](https://www.dropbox.com/s/9zzaj3h3u4bta23/ridi_data_publish_v2.zip?dl=0) and the pre-trained model from [HERE](https://wustl.box.com/s/fsjta6399idcb9lmd6maf4e215wxbp6i). Note that the pre-trained model is trained from a small group of people. For the best result please train your own model.
   3. For newly captured dataset, run ```python/gen_dataset.py```(with Tango phone) or ```python/gen_dataset_nopose.py```(without Tango phone) to preprocess the dataset. Please refer to the source code for command line arguments.
   4. To train a model, run ```python/regression_cascade.py```. Please refer to the source code for command line arguments. One possible call is:
     * ```python/regression_cascade.py --list <path-to-dataset-list> --model_output <path-to-output-folder>```.
